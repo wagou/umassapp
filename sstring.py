@@ -19,7 +19,7 @@ with open(path, encoding='utf-8-sig') as f:
 
 # print(skills)
 searcher = Searcher(db, CosineMeasure())
-results = searcher.search('独占力', 0.5)
+results = searcher.search('強占カ', 0.5)
 print(results)
 # => ['foo', 'fooo']
 results = searcher.search('和良バ場O', 0.2)

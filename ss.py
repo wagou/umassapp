@@ -42,7 +42,11 @@ tools = pyocr.get_available_tools()
 tool = tools[0]
 
 # 画像読み込み&トリミング
-frame = cv2.imread("cap22.png")
+frame = cv2.imread("tca5.jpg")
+height, width, channels = frame.shape[:3]
+if height > width * 16 / 9:
+	frame = frame[(height//2-width*8//9):(height//2+width*8//9),:]
+frame = cv2.resize(frame,(1080,1920))
 
 # 座標特定
 temp = cv2.imread("detail.png", 0)
@@ -57,7 +61,6 @@ for top_left in zip(*loc[::-1]):
 	print(top_left)
 print(loc[0][0],loc[1][0])
 dis = loc[0][0] - 70
-print(dis)
 
 def dist(dis,point):
 	return int(dis * (1920-point) / 1920)
@@ -66,7 +69,7 @@ frames = [frame[520+dist(dis,520):555+dist(dis,520),a:a+90] for a in [120,320,52
 # frames = [frame[520:555,120:210],frame[520:555,320:410],frame[520:555,520:610],frame[520:555,720:810],frame[520:555,920:1010]]
 # frames2 = [frame[550:585,a:a+90] for a in [120,320,520,720,920]]
 # frames2 = [frame[550:585,120:210],frame[550:585,320:410],frame[550:585,520:610],frame[550:585,720:810],frame[550:585,920:1010]]
-tekiframes = [frame[600+dist(dis,600):645+dist(dis,600),365:400],frame[600+dist(dis,600):645+dist(dis,600),560:600],frame[660+dist(dis,660):705+dist(dis,660),365:400],frame[660+dist(dis,660):705+dist(dis,660),560:600],frame[660+dist(dis,660):705+dist(dis,660),760:800],frame[660+dist(dis,660):705+dist(dis,660),955:995]
+tekiframes = [frame[600+dist(dis,600):645+dist(dis,600),365:400],frame[600+dist(dis,600):645+dist(dis,600),565:600],frame[660+dist(dis,660):705+dist(dis,660),365:400],frame[660+dist(dis,660):705+dist(dis,660),560:600],frame[660+dist(dis,660):705+dist(dis,660),760:800],frame[660+dist(dis,660):705+dist(dis,660),955:995]
 	,frame[720+dist(dis,720):765+dist(dis,720),365:400],frame[720+dist(dis,720):765+dist(dis,720),560:600],frame[720+dist(dis,720):765+dist(dis,720),760:800],frame[720+dist(dis,720):765+dist(dis,720),960:995]]
 # tekiframes = [frame[600:645,365:400],frame[600:645,560:600],frame[660:705,365:400],frame[660:705,560:600],frame[660:705,760:800],frame[660:705,960:995]
 # 	,frame[720:765,365:400],frame[720:765,560:600],frame[720:765,760:800],frame[720:765,960:995]]
@@ -109,26 +112,50 @@ for i in range(5):
 	img = cv2.threshold(img, th, 255, cv2.THRESH_BINARY)[1]
 	cv2.imwrite("sp{}.png".format(i), img)
 	# cv2.imwrite("sp{}.png".format(i), frames[i])
-	num = numres(Image.open("sp{}.png".format(i)))
+	num = int(numres(Image.open("sp{}.png".format(i))))
 	# if num == '':
 	# 	img = cv2.cvtColor(frames2[i], cv2.COLOR_BGR2GRAY)
 	# 	th = 140
 	# 	img = cv2.threshold(img, th, 255, cv2.THRESH_BINARY)[1]
 	# 	cv2.imwrite("sp{}.png".format(i), img)
 	# 	num = numres(Image.open("sp{}.png".format(i)))
+	if num > 1200:
+		num = 1200
 	status.append(int(num))
 	# print(num)
 print(status)
 
 # 適性読み取り
+def Match(image,alphabet):
+	temp = cv2.imread("db/{}.png".format(alphabet))
+	#比較方法はcv2.TM_CCOEFF_NORMEDを選択
+	result = cv2.matchTemplate(image, temp, cv2.TM_CCOEFF_NORMED)
+	#類似度の設定(0~1)
+	threshold = 0.9
+	loc = ()
+	#検出結果から検出領域の位置を取得
+	loc += np.where(result >= threshold)
+	if len(loc[0]) > 0:
+		return True
+	return False
 tekisei = []
 for j in range(10):
 	# img = cv2.cvtColor(tekiframes[j], cv2.COLOR_BGR2GRAY)
-	# th = 140
+	# th = 150
 	# img = cv2.threshold(img, th, 255, cv2.THRESH_BINARY)[1]
+	# cv2.imwrite("te{}.png".format(j), img)
 	cv2.imwrite("te{}.png".format(j), tekiframes[j])
 	res = alphabetres(Image.open("te{}.png".format(j)))
 	# print(res)
+	if res == '' or res not in 'SABCDEFG':
+		img = cv2.imread("te{}.png".format(j))
+		for p in "SABCDEFG":
+			match = Match(img,p)
+			if match:
+				res = p
+	if res == '':
+		print("not found at",j)
+		res = 'A'
 	tekisei.append(res)
 
 # 固有レベル読み取り
@@ -148,6 +175,9 @@ for i in range(len(skillframes)):
 	cv2.imwrite("sf{}.png".format(i), img)
 	skistr = textres(Image.open("sf{}.png".format(i)))
 	print(skistr)
+	# 個別対応(検索前処理)
+	if len(skistr) > 0 and skistr[-1] == 'カ':
+		skistr = skistr.replace('カ','力')
 	threshold = 0.5
 	count = 0
 	preresults = ""
@@ -207,11 +237,7 @@ with open(path, encoding='utf-8-sig') as f:
 	for statusline in lines:
 		statustable.append(statusline.split(','))
 def calculate(status):
-	colomn = (status - 1) // 400
-	row = status % 400
-	if row == 0:
-		row = 400
-	return int(statustable[row-1][colomn*2+1].replace('点',''))
+	return int(statustable[status-1][1].replace('点',''))
 
 for num in status:
 	point += calculate(num)

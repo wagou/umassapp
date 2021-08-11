@@ -26,7 +26,7 @@ from time import sleep
 frame = cv2.imread("cap7.png", 0)[70:120,420:670]
 cv2.imwrite("detail.png",frame)
 frame = cv2.imread("cap22.png", 0)
-temp = cv2.imread("detail.png", 0)
+temp = cv2.imread("db/A.png", 0)
 #比較方法はcv2.TM_CCOEFF_NORMEDを選択
 result = cv2.matchTemplate(frame, temp, cv2.TM_CCOEFF_NORMED)
 #類似度の設定(0~1)
@@ -36,7 +36,7 @@ loc = ()
 loc += np.where(result >= threshold)
 print(loc[0][0],loc[1][0])
 #検出領域を四角で囲んで保存
-result = cv2.imread("cap22.png", 0)
+result = cv2.imread("cap22.png")
 w, h = temp.shape[::-1]
 for top_left in zip(*loc[::-1]):
     # top_left = (top_left[0] + 328, top_left[1] + 194)
