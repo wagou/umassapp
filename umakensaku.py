@@ -23,10 +23,12 @@ from time import sleep
 #         bottom_right = (top_left[0] + w, top_left[1] + h)
 #         cv2.rectangle(result,top_left, bottom_right, (255, 0, 0), 2)
 #     cv2.imwrite("result{}.png".format(i), result)
-frame = cv2.imread("cap7.png", 0)[70:120,420:670]
-cv2.imwrite("detail.png",frame)
+# frame = cv2.imread("cap7.png", 0)[70:120,420:670]
+# cv2.imwrite("detail.png",frame)
+frame = cv2.imread("cap7.png", 0)[1750:1800,470:600]
+cv2.imwrite("close.png",frame)
 frame = cv2.imread("cap22.png", 0)
-temp = cv2.imread("db/A.png", 0)
+temp = cv2.imread("close.png", 0)
 #比較方法はcv2.TM_CCOEFF_NORMEDを選択
 result = cv2.matchTemplate(frame, temp, cv2.TM_CCOEFF_NORMED)
 #類似度の設定(0~1)

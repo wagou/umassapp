@@ -42,7 +42,7 @@ tools = pyocr.get_available_tools()
 tool = tools[0]
 
 # 画像読み込み&トリミング
-frame = cv2.imread("20210813-001246umamusume.png")
+frame = cv2.imread("cap9.png")
 height, width, channels = frame.shape[:3]
 if height > width * 16 / 9:
 	frame = frame[(height//2-width*8//9):(height//2+width*8//9),:]
@@ -203,10 +203,8 @@ for i in range(len(skillframes)):
 	if len(results) == 2 and results[0][:-1] == results[1][:-1]:
 		results = [results[0][:-1]+'〇']
 	# print(results)
-	# results.append('')
 	if results != []:
 		skill.append(results[0])
-	# skill.append(results[0])
 print(skill)
 
 # 名前読み取り
@@ -229,20 +227,18 @@ for i in range(len(resultsub)):
 if id > -1:
 	print(names[id])
 
-# 査定計算
-point = 0
-# ステータス
-path = "db/status.csv"
-statustable = []
-with open(path, encoding='utf-8-sig') as f:
-	lines = [s.strip() for s in f.readlines()]
-	for statusline in lines:
-		statustable.append(statusline.split(','))
-def calculate(status):
-	return int(statustable[status-1][1].replace('点',''))
-
-for num in status:
-	point += calculate(num)
+def calculate_points():
+	# 査定計算
+	point = 0
+	# ステータス
+	path = "db/status.csv"
+	statustable = []
+	with open(path, encoding='utf-8-sig') as f:
+		lines = [s.strip() for s in f.readlines()]
+		for statusline in lines:
+			statustable.append(statusline.split(','))
+	for num in status:
+		point += int(statustable[num-1][1].replace('点',''))
 
 print(point)
 print(tekisei)
@@ -272,27 +268,4 @@ for i in range(len(skill)):
 			point += int(sklpoint / 1.1 * 0.7)
 		else:
 			point += sklpoint
-while len(skill) < 14:
-	skill.append('')
 print(point)
-
-def Calc_rank(point):
-	if point >= 17000:
-		rank = 'S+'
-	elif point >= 14500:
-		rank = 'S'
-	elif point >= 12100:
-		rank = 'A+'
-	elif point >= 10000:
-		rank = 'A'
-	elif point >= 8200:
-		rank = 'B+'
-	elif point >= 7000:
-		rank = 'B'
-	else:
-		rank = '-B'
-	return rank
-umaid = 0
-rank = Calc_rank(point)
-outstr = "{0},{1[0]},{1[1]},{2},{3},{4[0]},{4[1]},{4[2]},{4[3]},{4[4]},{5[0]},{5[1]},{5[2]},{5[3]},{5[4]},{5[5]},{5[6]},{5[7]},{5[8]},{5[9]},{6[0]},{7},{6[1]},{6[2]},{6[3]},{6[4]},{6[5]},{6[6]},{6[7]},{6[8]},{6[9]},{6[10]},{6[11]},{6[12]},{6[13]}".format(umaid,names[id],point,rank,status,tekisei,skill,lv)
-print(outstr)
