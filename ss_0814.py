@@ -28,14 +28,12 @@ db2 = DictDatabase(CharacterNgramFeatureExtractor(2))
 db3 = DictDatabase(CharacterNgramFeatureExtractor(2))
 path = "db/umamusume.csv"
 names = []
-subs = []
 with open(path, encoding='utf-8-sig') as f:
 	lines = [s.strip() for s in f.readlines()]
 	for words in lines:
 		db2.add(words.split(',')[0])
 		db3.add(words.split(',')[1])
-		names.append(words.split(',')[0])
-		subs.append(words.split(',')[1])
+		names.append(words.split(','))
 searcher2 = Searcher(db2, CosineMeasure())
 searcher3 = Searcher(db3, CosineMeasure())
 
@@ -44,7 +42,7 @@ tools = pyocr.get_available_tools()
 tool = tools[0]
 
 # 画像読み込み&トリミング
-frame = cv2.imread("cap4.png")
+frame = cv2.imread("20210813-001246umamusume.png")
 height, width, channels = frame.shape[:3]
 if height > width * 16 / 9:
 	frame = frame[(height//2-width*8//9):(height//2+width*8//9),:]
@@ -67,25 +65,24 @@ for top_left in zip(*loc1[::-1]):
 	print(top_left)
 print(loc1[0][0],loc1[1][0])
 print(loc2[0][0],loc2[1][0])
-uppoint = loc1[0][0]
 dis = loc1[0][0] - 70
-dis2 = loc2[0][0] - loc1[0][0]
-print(dis,dis2)
 
 def dist(dis,point):
 	return int(dis * (1920-point) / 1920)
 
-def new_dist(point):
-	return int(uppoint + (point - 70) * dis2 / 1680)
-
-frames = [frame[new_dist(520):new_dist(555),a:a+90] for a in [120,320,520,720,920]]
-tekiframes = [frame[new_dist(600):new_dist(645),365:400],frame[new_dist(600):new_dist(645),565:600],frame[new_dist(660):new_dist(705),365:400],frame[new_dist(660):new_dist(705),560:600],frame[new_dist(660):new_dist(705),760:800],frame[new_dist(660):new_dist(705),955:995]
-	,frame[new_dist(720):new_dist(765),365:400],frame[new_dist(720):new_dist(765),560:600],frame[new_dist(720):new_dist(765),760:800],frame[new_dist(720):new_dist(765),960:995]]
-skillframe = frame[new_dist(930):new_dist(970),110:460]
-skillframe2 = frame[new_dist(930):new_dist(970),610:960]
+frames = [frame[520+dist(dis,520):555+dist(dis,520),a:a+90] for a in [120,320,520,720,920]]
+# frames = [frame[520:555,120:210],frame[520:555,320:410],frame[520:555,520:610],frame[520:555,720:810],frame[520:555,920:1010]]
+# frames2 = [frame[550:585,a:a+90] for a in [120,320,520,720,920]]
+# frames2 = [frame[550:585,120:210],frame[550:585,320:410],frame[550:585,520:610],frame[550:585,720:810],frame[550:585,920:1010]]
+tekiframes = [frame[600+dist(dis,600):645+dist(dis,600),365:400],frame[600+dist(dis,600):645+dist(dis,600),565:600],frame[660+dist(dis,660):705+dist(dis,660),365:400],frame[660+dist(dis,660):705+dist(dis,660),560:600],frame[660+dist(dis,660):705+dist(dis,660),760:800],frame[660+dist(dis,660):705+dist(dis,660),955:995]
+	,frame[720+dist(dis,720):765+dist(dis,720),365:400],frame[720+dist(dis,720):765+dist(dis,720),560:600],frame[720+dist(dis,720):765+dist(dis,720),760:800],frame[720+dist(dis,720):765+dist(dis,720),960:995]]
+# tekiframes = [frame[600:645,365:400],frame[600:645,560:600],frame[660:705,365:400],frame[660:705,560:600],frame[660:705,760:800],frame[660:705,960:995]
+# 	,frame[720:765,365:400],frame[720:765,560:600],frame[720:765,760:800],frame[720:765,960:995]]
+skillframe = frame[930+dist(dis,930):970+dist(dis,930),110:460]
+skillframe2 = frame[930+dist(dis,930):970+dist(dis,930),610:960]
 
 Wlist = [110,610]
-Hlist = [new_dist(930),new_dist(1050),new_dist(1160),new_dist(1270),new_dist(1380),new_dist(1490),new_dist(1600)]
+Hlist = [930+dist(dis,930),1050+dist(dis,1050),1160+dist(dis,1160),1270+dist(dis,1270),1380+dist(dis,1380),1490+dist(dis,1490),1600+dist(dis,1600)]
 
 skillframes = []
 for i in range(len(Hlist)):
@@ -167,7 +164,7 @@ for j in range(10):
 	tekisei.append(res)
 
 # 固有レベル読み取り
-img = cv2.cvtColor(frame[new_dist(930):new_dist(970),505:525], cv2.COLOR_BGR2GRAY)
+img = cv2.cvtColor(frame[930+dist(dis,930):970+dist(dis,930),505:525], cv2.COLOR_BGR2GRAY)
 th = 140
 img = cv2.threshold(img, th, 255, cv2.THRESH_BINARY)[1]
 cv2.imwrite("lv.png", img)
@@ -218,23 +215,24 @@ for i in range(len(skillframes)):
 print(skill)
 
 # 名前読み取り
-img = cv2.cvtColor(frame[new_dist(200):new_dist(300),550:1000], cv2.COLOR_BGR2GRAY)
+img = cv2.cvtColor(frame[200+dist(dis,200):300+dist(dis,200),550:1000], cv2.COLOR_BGR2GRAY)
 th = 140
 img = cv2.threshold(img, th, 255, cv2.THRESH_BINARY)[1]
 cv2.imwrite("name.png", img)
 umatext = textres(Image.open("name.png"))
-print(umatext)
+# print(umatext)
 sub,name = umatext.split("\n")
 resultsub = searcher3.search(sub, 0.5)
 resultname = searcher2.search(name, 0.5)
 id = -1
-print(resultname,resultsub)
-if len(resultname) > 0:
-	id = names.index(resultname[0])
-if len(resultsub) > 0 and id == -1:
-	id = subs.index(resultsub[0])
+for i in range(len(resultsub)):
+	for j in range(len(resultname)):
+		try:
+			id = names.index([resultname[j],resultsub[i]])
+		except Exception as e:
+			pass
 if id > -1:
-	print(names[id],subs[id])
+	print(names[id])
 
 # 査定計算
 point = 0
@@ -301,5 +299,5 @@ def Calc_rank(point):
 	return rank
 umaid = 0
 rank = Calc_rank(point)
-outstr = "{0},{1[0]},{1[1]},{2},{3},{4[0]},{4[1]},{4[2]},{4[3]},{4[4]},{5[0]},{5[1]},{5[2]},{5[3]},{5[4]},{5[5]},{5[6]},{5[7]},{5[8]},{5[9]},{6[0]},{7},{6[1]},{6[2]},{6[3]},{6[4]},{6[5]},{6[6]},{6[7]},{6[8]},{6[9]},{6[10]},{6[11]},{6[12]},{6[13]}".format(umaid,[names[id],subs[id]],point,rank,status,tekisei,skill,lv)
+outstr = "{0},{1[0]},{1[1]},{2},{3},{4[0]},{4[1]},{4[2]},{4[3]},{4[4]},{5[0]},{5[1]},{5[2]},{5[3]},{5[4]},{5[5]},{5[6]},{5[7]},{5[8]},{5[9]},{6[0]},{7},{6[1]},{6[2]},{6[3]},{6[4]},{6[5]},{6[6]},{6[7]},{6[8]},{6[9]},{6[10]},{6[11]},{6[12]},{6[13]}".format(umaid,names[id],point,rank,status,tekisei,skill,lv)
 print(outstr)
